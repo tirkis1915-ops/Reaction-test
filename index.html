@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reaction Time Test</title>
+<meta name="description" content="Test your reaction time in milliseconds. Click as soon as the screen turns green and see your best and average score.">
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --text: #1a1d21; --muted: #5f6672;
+  --border: #d9dde3; --accent: #2563eb;
+  color-scheme: light;
+  box-sizing: border-box;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --card: #181b21; --text: #e9ecf1; --muted: #9aa3b2;
+    --border: #2c313b; --accent: #5b8def;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh; line-height: 1.5;
+}
+main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 20px; }
+#arena {
+  height: 280px; border-radius: 16px; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 20px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  background: #dc2626; color: #fff; font-size: 1.3rem; font-weight: 600;
+  transition: background 0.1s;
+}
+#arena.ready { background: #dc2626; }
+#arena.go { background: #16a34a; }
+#arena.idle { background: var(--accent); }
+#arena.early { background: #f59e0b; color: #1a1d21; }
+.stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px;
+}
+.stat {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center;
+}
+.stat .k { color: var(--muted); font-size: 0.8rem; }
+.stat .v { font-size: 1.2rem; font-weight: 700; }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 16px;
+}
+h2 { font-size: 1.1rem; margin: 0 0 8px; }
+p { margin: 0 0 10px; }
+button {
+  font: inherit; font-weight: 600; background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; cursor: pointer; margin-top: 12px;
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Reaction Time Test</h1>
+  <p class="sub">How fast are your reflexes? Click or tap when the screen turns green.</p>
+
+  <div id="arena" class="idle">Tap to start</div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Last</div><div class="v" id="last">-</div></div>
+    <div class="stat"><div class="k">Best</div><div class="v" id="best">-</div></div>
+    <div class="stat"><div class="k">Average</div><div class="v" id="avg">-</div></div>
+  </div>
+
+  <div class="card">
+    <h2>How it works</h2>
+    <p>Click the red box to start. Wait for it to turn green, then click as quickly as you can. Clicking too early resets the round.</p>
+    <p>Average human reaction time to a visual stimulus is roughly 200 to 250 milliseconds. Your score depends on your device, screen refresh rate and browser, so compare results from the same device.</p>
+    <button id="reset">Reset scores</button>
+  </div>
+</main>
+
+<script>
+const arena = document.getElementById("arena");
+const lastEl = document.getElementById("last");
+const bestEl = document.getElementById("best");
+const avgEl = document.getElementById("avg");
+const resetBtn = document.getElementById("reset");
+
+let state = "idle";
+let timer = null;
+let startTime = 0;
+let times = [];
+
+function render() {
+  if (times.length === 0) {
+    lastEl.textContent = "-"; bestEl.textContent = "-"; avgEl.textContent = "-";
+    return;
+  }
+  lastEl.textContent = times[times.length - 1] + " ms";
+  bestEl.textContent = Math.min(...times) + " ms";
+  avgEl.textContent = Math.round(times.reduce((a, b) => a + b, 0) / times.length) + " ms";
+}
+
+function setArena(cls, text) {
+  arena.className = cls;
+  arena.textContent = text;
+}
+
+function startRound() {
+  state = "ready";
+  setArena("ready", "Wait for green...");
+  const delay = 2000 + Math.random() * 3000;
+  timer = setTimeout(() => {
+    state = "go";
+    startTime = performance.now();
+    setArena("go", "CLICK!");
+  }, delay);
+}
+
+arena.addEventListener("click", () => {
+  if (state === "idle") {
+    startRound();
+  } else if (state === "ready") {
+    clearTimeout(timer);
+    state = "idle";
+    setArena("early", "Too early! Tap to try again.");
+  } else if (state === "go") {
+    const time = Math.round(performance.now() - startTime);
+    times.push(time);
+    state = "idle";
+    setArena("idle", time + " ms. Tap to play again.");
+    render();
+  }
+});
+
+resetBtn.addEventListener("click", () => {
+  times = [];
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
